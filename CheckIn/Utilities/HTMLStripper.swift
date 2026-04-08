@@ -69,7 +69,14 @@ func stripEmailQuotes(_ text: String) -> String {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         // Stop at common reply/forward headers
+        // Check for From: at start or mid-line (keep text before it)
         if trimmed.hasPrefix("From:") { break }
+        if let range = trimmed.range(of: " From:") {
+            let before = String(trimmed[trimmed.startIndex..<range.lowerBound])
+                .trimmingCharacters(in: .whitespaces)
+            if !before.isEmpty { result.append(before) }
+            break
+        }
         if trimmed.hasPrefix("On ") && trimmed.contains(" wrote:") { break }
         if trimmed.contains("________________________________") { break }
         if trimmed.hasPrefix("-----Original Message-----") { break }
