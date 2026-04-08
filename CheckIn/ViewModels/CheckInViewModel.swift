@@ -24,7 +24,7 @@ enum Item: Identifiable {
     }
 }
 
-@Observable
+@MainActor @Observable
 final class CheckInViewModel {
     // State
     private(set) var summary: CheckInSummary?

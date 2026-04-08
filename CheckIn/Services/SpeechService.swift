@@ -7,7 +7,7 @@
 import Foundation
 import AVFoundation
 
-@Observable
+@MainActor @Observable
 final class SpeechService: NSObject, AVSpeechSynthesizerDelegate {
     private let synthesizer = AVSpeechSynthesizer()
     private(set) var isSpeaking = false

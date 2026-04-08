@@ -5,7 +5,7 @@
 import Foundation
 import MSAL
 
-@Observable
+@MainActor @Observable
 final class AuthService {
     private(set) var isAuthenticated = false
     private var msalApp: MSALPublicClientApplication?

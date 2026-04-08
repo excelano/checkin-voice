@@ -8,7 +8,7 @@ import Foundation
 import Speech
 import AVFoundation
 
-@Observable
+@MainActor @Observable
 final class DictationService {
     private var recognizer: SFSpeechRecognizer?
     private var recognitionTask: SFSpeechRecognitionTask?
