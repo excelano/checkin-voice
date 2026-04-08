@@ -115,23 +115,38 @@ final class GraphClient {
         let cutoff = Date().addingTimeInterval(-24 * 3600)
         var messages: [ChatMessage] = []
 
+        print("DEBUG: pendingChats - total chats returned: \(data.value.count), userID: \(userID)")
+
         for chat in data.value {
-            guard let preview = chat.lastMessagePreview else { continue }
+            guard let preview = chat.lastMessagePreview else {
+                print("DEBUG: chat \(chat.id.prefix(8))... skipped: no lastMessagePreview")
+                continue
+            }
 
             // Skip system messages (meeting recordings, etc.)
             if !preview.messageType.isEmpty && preview.messageType != "message" {
+                print("DEBUG: chat \(chat.id.prefix(8))... skipped: system message type '\(preview.messageType)'")
                 continue
             }
 
             // Skip if sender is unknown
-            guard let from = preview.from?.user else { continue }
+            guard let from = preview.from?.user else {
+                print("DEBUG: chat \(chat.id.prefix(8))... skipped: no sender info")
+                continue
+            }
 
             // Skip if you sent the last message (not pending)
-            if from.id == userID { continue }
+            if from.id == userID {
+                print("DEBUG: chat \(chat.id.prefix(8))... skipped: sent by self (\(from.displayName))")
+                continue
+            }
 
             // Parse sent time, skip if older than 24 hours
             guard let sent = ISO8601DateFormatter().date(from: preview.createdDateTime),
-                  sent > cutoff else { continue }
+                  sent > cutoff else {
+                print("DEBUG: chat \(chat.id.prefix(8))... skipped: too old (\(preview.createdDateTime))")
+                continue
+            }
 
             // Determine topic
             var topic = chat.topic ?? ""
