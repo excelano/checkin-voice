@@ -84,8 +84,12 @@ final class GraphClient {
             "$select": "body"
         ])
 
-        if data.body.contentType == "html" {
-            return stripHTML(data.body.content)
+        print("DEBUG: Email body contentType: '\(data.body.contentType)'")
+        print("DEBUG: Email body first 200 chars: \(String(data.body.content.prefix(200)))")
+        if data.body.contentType.lowercased() == "html" {
+            let stripped = stripHTML(data.body.content)
+            print("DEBUG: Stripped body first 200 chars: \(String(stripped.prefix(200)))")
+            return stripped
         }
         return data.body.content
     }
