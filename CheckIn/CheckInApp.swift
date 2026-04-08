@@ -12,11 +12,12 @@ struct CheckInApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(authService: authService)
+                .onOpenURL { url in
+                    // Pass the MSAL redirect callback URL back to MSAL
+                    MSALPublicClientApplication.handleMSALResponse(
+                        url, sourceApplication: nil
+                    )
+                }
         }
-    }
-
-    // Handle the MSAL redirect callback when the browser returns after sign-in
-    init() {
-        // No additional setup needed — AuthService configures MSAL in its init
     }
 }
