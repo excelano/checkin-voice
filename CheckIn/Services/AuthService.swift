@@ -58,13 +58,12 @@ final class AuthService {
         let scopes = Constants.scopes(enableTeams: enableTeams)
 
         // Get the root view controller for presenting the auth browser
-        guard let windowScene = await MainActor.run(body: {
-            UIApplication.shared.connectedScenes.first as? UIWindowScene
-        }),
-        let viewController = await MainActor.run(body: {
-            windowScene?.keyWindow?.rootViewController
-        }) else {
-            throw AuthError.noViewController
+        let viewController: UIViewController = try await MainActor.run {
+            guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let vc = scene.keyWindow?.rootViewController else {
+                throw AuthError.noViewController
+            }
+            return vc
         }
 
         let webviewParams = MSALWebviewParameters(authPresentationViewController: viewController)

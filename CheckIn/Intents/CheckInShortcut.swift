@@ -15,10 +15,8 @@ struct CheckInShortcut: AppIntent {
     // Opens the app so MSAL can silently authenticate and TTS can play
     static var openAppWhenRun = true
 
+    @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Build a quick text summary for Siri to speak.
-        // The app opens and does the full fetch + TTS in the foreground,
-        // but this dialog gives Siri something to say immediately.
         let authService = AuthService()
 
         guard authService.isAuthenticated else {
@@ -34,47 +32,33 @@ struct CheckInShortcut: AppIntent {
             return .result(dialog: "Could not connect to Microsoft 365.")
         }
 
-        // Fetch concurrently
-        var meetingText = ""
-        var emailText = ""
-        var chatText = ""
+        // Fetch sequentially (simpler, avoids Swift 6 sendability issues)
+        var parts: [String] = []
 
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                if let meeting = try? await client.nextMeeting() {
-                    meetingText = "Your next meeting is \(meeting.subject), \(untilTime(meeting.start))."
+        if let meeting = try? await client.nextMeeting() {
+            parts.append("Your next meeting is \(meeting.subject), \(untilTime(meeting.start)).")
+        } else {
+            parts.append("No upcoming meetings.")
+        }
+
+        if let emails = try? await client.unreadEmails() {
+            if emails.isEmpty {
+                parts.append("No unread emails.")
+            } else {
+                parts.append("You have \(emails.count) unread email\(emails.count == 1 ? "" : "s").")
+            }
+        }
+
+        if enableTeams {
+            if let chats = try? await client.pendingChats() {
+                if chats.isEmpty {
+                    parts.append("No pending Teams messages.")
                 } else {
-                    meetingText = "No upcoming meetings."
-                }
-            }
-
-            group.addTask {
-                if let emails = try? await client.unreadEmails() {
-                    if emails.isEmpty {
-                        emailText = "No unread emails."
-                    } else {
-                        emailText = "You have \(emails.count) unread email\(emails.count == 1 ? "" : "s")."
-                    }
-                }
-            }
-
-            if enableTeams {
-                group.addTask {
-                    if let chats = try? await client.pendingChats() {
-                        if chats.isEmpty {
-                            chatText = "No pending Teams messages."
-                        } else {
-                            chatText = "\(chats.count) pending Teams message\(chats.count == 1 ? "" : "s")."
-                        }
-                    }
+                    parts.append("\(chats.count) pending Teams message\(chats.count == 1 ? "" : "s").")
                 }
             }
         }
 
-        let summary = [meetingText, emailText, chatText]
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-
-        return .result(dialog: IntentDialog(stringLiteral: summary))
+        return .result(dialog: IntentDialog(stringLiteral: parts.joined(separator: " ")))
     }
 }
