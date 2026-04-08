@@ -68,7 +68,7 @@ final class GraphClient {
         ])
 
         return data.value.map { e in
-            let received = ISO8601DateFormatter().date(from: e.receivedDateTime) ?? Date()
+            let received = parseISO8601(e.receivedDateTime) ?? Date()
             return Email(
                 id: e.id,
                 subject: e.subject,
@@ -142,7 +142,7 @@ final class GraphClient {
             }
 
             // Parse sent time, skip if older than 24 hours
-            guard let sent = ISO8601DateFormatter().date(from: preview.createdDateTime),
+            guard let sent = parseISO8601(preview.createdDateTime),
                   sent > cutoff else {
                 print("DEBUG: chat \(chat.id.prefix(8))... skipped: too old (\(preview.createdDateTime))")
                 continue
@@ -175,7 +175,7 @@ final class GraphClient {
             guard m.messageType == "message" else { return nil }
 
             let from = m.from?.user?.displayName ?? ""
-            let sent = ISO8601DateFormatter().date(from: m.createdDateTime) ?? Date()
+            let sent = parseISO8601(m.createdDateTime) ?? Date()
 
             return ChatMessage(
                 chatID: chatID,
@@ -257,6 +257,20 @@ final class GraphClient {
             throw GraphError.httpError(method: method, path: path, status: http.statusCode, body: body)
         }
     }
+}
+
+// MARK: - ISO8601 Date Parsing
+
+/// Parse ISO8601 dates from Graph API, handling fractional seconds.
+/// Graph returns varying formats like "2026-04-08T18:55:28.844Z" or "2026-04-08T16:54:51.17Z".
+/// The default ISO8601DateFormatter doesn't handle fractional seconds.
+private func parseISO8601(_ dateString: String) -> Date? {
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = formatter.date(from: dateString) { return date }
+    // Fallback without fractional seconds
+    formatter.formatOptions = [.withInternetDateTime]
+    return formatter.date(from: dateString)
 }
 
 // MARK: - Graph Date Parsing
