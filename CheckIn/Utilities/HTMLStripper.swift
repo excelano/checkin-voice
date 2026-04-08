@@ -69,11 +69,13 @@ func stripEmailQuotes(_ text: String) -> String {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         // Stop at common reply/forward headers
-        if trimmed.hasPrefix("From:") && trimmed.contains("@") { break }
+        if trimmed.hasPrefix("From:") { break }
         if trimmed.hasPrefix("On ") && trimmed.contains(" wrote:") { break }
-        if trimmed == "________________________________" { break }
+        if trimmed.contains("________________________________") { break }
         if trimmed.hasPrefix("-----Original Message-----") { break }
         if trimmed.hasPrefix("----- Forwarded Message -----") { break }
+        if trimmed.hasPrefix("Sent:") { break }
+        if trimmed.hasPrefix("Subject:") && result.count > 0 { break }
 
         // Stop at common signature markers
         if trimmed == "--" { break }
