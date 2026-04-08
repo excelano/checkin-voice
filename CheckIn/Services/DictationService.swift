@@ -73,6 +73,12 @@ final class DictationService {
         let inputNode = audioEngine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
 
+        // Guard against simulator where audio input may not be available
+        guard format.sampleRate > 0 && format.channelCount > 0 else {
+            print("Audio input not available (likely running in Simulator)")
+            return
+        }
+
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
             request.append(buffer)
         }

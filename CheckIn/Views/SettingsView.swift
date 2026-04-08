@@ -9,6 +9,7 @@ import SwiftUI
 struct SettingsView: View {
     var viewModel: CheckInViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showReauthAlert = false
 
     var body: some View {
         ZStack {
@@ -19,7 +20,12 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle(isOn: Binding(
                         get: { viewModel.enableTeams },
-                        set: { viewModel.enableTeams = $0 }
+                        set: { newValue in
+                            viewModel.enableTeams = newValue
+                            if newValue {
+                                showReauthAlert = true
+                            }
+                        }
                     )) {
                         Text("Enable Teams")
                             .font(.system(.body, design: .monospaced))
@@ -53,5 +59,16 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.black, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .alert("Sign In Again", isPresented: $showReauthAlert) {
+            Button("Sign In") {
+                viewModel.signOut()
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.enableTeams = false
+            }
+        } message: {
+            Text("Teams requires additional permissions. You'll need to sign in again to grant access.")
+        }
     }
 }
