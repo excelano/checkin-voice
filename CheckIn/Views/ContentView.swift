@@ -79,7 +79,8 @@ struct ContentView: View {
                 // Teams disabled for now — Settings toggle will control this later
                 _ = try await authService.signIn(enableTeams: false)
             } catch {
-                errorMessage = error.localizedDescription
+                print("Sign-in error: \(error)")
+                errorMessage = "\(error)"
             }
             isSigningIn = false
         }
