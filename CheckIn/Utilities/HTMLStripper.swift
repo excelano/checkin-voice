@@ -58,3 +58,38 @@ func stripHTML(_ html: String) -> String {
 
     return s.trimmingCharacters(in: .whitespacesAndNewlines)
 }
+
+/// Strip quoted/previous messages and signature blocks from email text.
+/// Call this AFTER stripHTML to work on plain text.
+func stripEmailQuotes(_ text: String) -> String {
+    let lines = text.components(separatedBy: "\n")
+    var result: [String] = []
+
+    for line in lines {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+        // Stop at common reply/forward headers
+        if trimmed.hasPrefix("From:") && trimmed.contains("@") { break }
+        if trimmed.hasPrefix("On ") && trimmed.contains(" wrote:") { break }
+        if trimmed == "________________________________" { break }
+        if trimmed.hasPrefix("-----Original Message-----") { break }
+        if trimmed.hasPrefix("----- Forwarded Message -----") { break }
+
+        // Stop at common signature markers
+        if trimmed == "--" { break }
+        if trimmed == "-- " { break }
+        if trimmed.lowercased() == "regards," { break }
+        if trimmed.lowercased() == "best regards," { break }
+        if trimmed.lowercased() == "thanks," { break }
+        if trimmed.lowercased() == "thank you," { break }
+        if trimmed.lowercased() == "cheers," { break }
+        if trimmed.lowercased() == "best," { break }
+        if trimmed.lowercased() == "sincerely," { break }
+        if trimmed.lowercased().hasPrefix("sent from my ") { break }
+        if trimmed.lowercased().hasPrefix("get outlook for") { break }
+
+        result.append(line)
+    }
+
+    return result.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+}

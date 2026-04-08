@@ -84,14 +84,13 @@ final class GraphClient {
             "$select": "body"
         ])
 
-        print("DEBUG: Email body contentType: '\(data.body.contentType)'")
-        print("DEBUG: Email body first 200 chars: \(String(data.body.content.prefix(200)))")
+        let text: String
         if data.body.contentType.lowercased() == "html" {
-            let stripped = stripHTML(data.body.content)
-            print("DEBUG: Stripped body first 200 chars: \(String(stripped.prefix(200)))")
-            return stripped
+            text = stripHTML(data.body.content)
+        } else {
+            text = data.body.content
         }
-        return data.body.content
+        return stripEmailQuotes(text)
     }
 
     func markEmailRead(id: String) async throws {
