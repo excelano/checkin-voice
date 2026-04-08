@@ -38,27 +38,6 @@ struct ReplyView: View {
                         .frame(minHeight: 120)
                         .focused($isFocused)
 
-                    // Send button
-                    Button {
-                        send()
-                    } label: {
-                        HStack {
-                            if viewModel.isSending {
-                                ProgressView()
-                                    .tint(.black)
-                            }
-                            Text(viewModel.isSending ? "Sending..." : "Send")
-                        }
-                        .font(.system(.body, design: .monospaced))
-                        .fontWeight(.medium)
-                        .foregroundStyle(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(draft.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray : Color.green)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isSending)
-
                     Spacer()
                 }
                 .padding()
@@ -72,6 +51,18 @@ struct ReplyView: View {
                     Button { dismiss() } label: {
                         Image(systemName: "xmark")
                             .foregroundStyle(.red)
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.isSending {
+                        ProgressView()
+                            .tint(.green)
+                    } else {
+                        Button { send() } label: {
+                            Image(systemName: "paperplane.fill")
+                                .foregroundStyle(draft.trimmingCharacters(in: .whitespaces).isEmpty ? .gray : .green)
+                        }
+                        .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
             }
