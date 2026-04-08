@@ -14,7 +14,7 @@ struct DetailView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Brand.bg.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -29,7 +29,7 @@ struct DetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.black, for: .navigationBar)
+        .toolbarBackground(Brand.bgDarker, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -43,14 +43,14 @@ struct DetailView: View {
                             }
                         } label: {
                             Image(systemName: "envelope.open")
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Brand.accent)
                         }
                     }
                     Button {
                         showReply = true
                     } label: {
                         Image(systemName: "arrowshape.turn.up.left")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Brand.accent)
                     }
                 }
             }
@@ -81,25 +81,23 @@ struct DetailView: View {
 
     @ViewBuilder
     private func emailDetail(_ email: Email) -> some View {
-        // Header
         VStack(alignment: .leading, spacing: 4) {
             Text(email.subject)
                 .font(.system(.headline, design: .monospaced))
                 .foregroundStyle(.white)
             Text("From: \(email.from)")
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.cyan)
+                .foregroundStyle(Brand.accent)
             Text(relativeTime(email.received))
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.gray)
+                .foregroundStyle(Brand.textMuted)
         }
 
-        Divider().overlay(Color.gray.opacity(0.3))
+        Divider().overlay(Brand.accentDim.opacity(0.3))
 
-        // Body
         if viewModel.isLoadingDetail {
             ProgressView()
-                .tint(.green)
+                .tint(Brand.accent)
         } else if let body = viewModel.emailBody {
             Text(body)
                 .font(.system(.body, design: .monospaced))
@@ -111,34 +109,32 @@ struct DetailView: View {
 
     @ViewBuilder
     private func chatDetail(_ chat: ChatMessage) -> some View {
-        // Header
         VStack(alignment: .leading, spacing: 4) {
             Text(chat.topic)
                 .font(.system(.headline, design: .monospaced))
                 .foregroundStyle(.white)
             Text(relativeTime(chat.sent))
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.gray)
+                .foregroundStyle(Brand.textMuted)
         }
 
-        Divider().overlay(Color.gray.opacity(0.3))
+        Divider().overlay(Brand.accentDim.opacity(0.3))
 
-        // Messages
         if viewModel.isLoadingDetail {
             ProgressView()
-                .tint(.green)
+                .tint(Brand.accent)
         } else if let messages = viewModel.chatMessages {
             ForEach(messages) { msg in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(msg.from)
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(Brand.accent)
                     Text(msg.preview)
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.white)
                     Text(relativeTime(msg.sent))
                         .font(.system(.caption2, design: .monospaced))
-                        .foregroundStyle(.gray)
+                        .foregroundStyle(Brand.textMuted)
                 }
                 .padding(.vertical, 4)
             }

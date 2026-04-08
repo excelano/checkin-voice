@@ -13,7 +13,7 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Brand.bg.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 24) {
                 // Voice on Start toggle
@@ -26,7 +26,7 @@ struct SettingsView: View {
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(.white)
                     }
-                    .tint(.green)
+                    .tint(Brand.accent)
 
                     Text("Read your summary aloud when the app starts.")
                         .font(.system(.caption, design: .monospaced))
@@ -50,7 +50,7 @@ struct SettingsView: View {
                             .font(.system(.body, design: .monospaced))
                             .foregroundStyle(.white)
                     }
-                    .tint(.green)
+                    .tint(Brand.accent)
 
                     Text("Requires admin consent from your IT department. "
                          + "Email and calendar work without this.")
@@ -76,7 +76,7 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.black, for: .navigationBar)
+        .toolbarBackground(Brand.bgDarker, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .alert("Sign In Again", isPresented: $showReauthAlert) {
             Button("Sign In") {

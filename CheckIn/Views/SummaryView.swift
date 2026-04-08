@@ -12,13 +12,13 @@ struct SummaryView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                Brand.bg.ignoresSafeArea()
 
                 if viewModel.isLoading && viewModel.summary == nil {
                     ProgressView("Checking in...")
                         .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.green)
-                        .tint(.green)
+                        .foregroundStyle(Brand.accent)
+                        .tint(Brand.accent)
                 } else if let summary = viewModel.summary {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
@@ -40,7 +40,7 @@ struct SummaryView: View {
                             Task { await viewModel.fetchSummary() }
                         }
                         .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Brand.accent)
                     }
                     .padding()
                 }
@@ -49,7 +49,6 @@ struct SummaryView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 16) {
-                        // Stop TTS
                         if viewModel.speechService.isSpeaking {
                             Button {
                                 viewModel.speechService.stop()
@@ -59,17 +58,16 @@ struct SummaryView: View {
                             }
                         }
 
-                        // Settings
                         NavigationLink {
                             SettingsView(viewModel: viewModel)
                         } label: {
                             Image(systemName: "gearshape")
-                                .foregroundStyle(.gray)
+                                .foregroundStyle(Brand.textMuted)
                         }
                     }
                 }
             }
-            .toolbarBackground(.black, for: .navigationBar)
+            .toolbarBackground(Brand.bgDarker, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .navigationDestination(for: EmailDestination.self) { dest in
                 DetailView(viewModel: viewModel, item: .email(dest.email))
@@ -97,7 +95,7 @@ struct SummaryView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Image(systemName: "calendar")
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(Brand.accent)
                     Text(meeting.subject)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
@@ -109,10 +107,10 @@ struct SummaryView: View {
                         .foregroundStyle(urgency)
                     if !meeting.location.isEmpty {
                         Text(meeting.location)
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(Brand.textMuted)
                     } else if meeting.isOnline {
                         Text("Online")
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(Brand.textMuted)
                     }
                 }
                 .font(.system(.caption, design: .monospaced))
@@ -120,21 +118,21 @@ struct SummaryView: View {
         } else {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(Brand.accent)
                 Text("No upcoming meetings")
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(Brand.textMuted)
             }
             .font(.system(.body, design: .monospaced))
         }
 
-        Divider().overlay(Color.gray.opacity(0.3))
+        Divider().overlay(Brand.accentDim.opacity(0.3))
     }
 
     private func meetingUrgency(_ start: Date) -> Color {
         let until = start.timeIntervalSinceNow
         if until < 0 { return .red }
         if until < 15 * 60 { return .yellow }
-        return .green
+        return Brand.accent
     }
 
     // MARK: - Email
@@ -146,15 +144,15 @@ struct SummaryView: View {
         } else if emails.isEmpty {
             HStack(spacing: 6) {
                 Image(systemName: "envelope")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(Brand.accent)
                 Text("No unread emails")
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(Brand.textMuted)
             }
             .font(.system(.body, design: .monospaced))
         } else {
             HStack(spacing: 6) {
                 Image(systemName: "envelope")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(Brand.accent)
                 Text("unread emails (\(emails.count)):")
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
@@ -173,7 +171,7 @@ struct SummaryView: View {
             }
         }
 
-        Divider().overlay(Color.gray.opacity(0.3))
+        Divider().overlay(Brand.accentDim.opacity(0.3))
     }
 
     // MARK: - Teams
@@ -183,9 +181,9 @@ struct SummaryView: View {
         if !enabled {
             HStack(spacing: 6) {
                 Image(systemName: "bubble.left.and.bubble.right")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(Brand.accent)
                 Text("Teams disabled")
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(Brand.textMuted)
             }
             .font(.system(.body, design: .monospaced))
         } else if let error {
@@ -193,9 +191,9 @@ struct SummaryView: View {
         } else if chats.isEmpty {
             HStack(spacing: 6) {
                 Image(systemName: "bubble.left.and.bubble.right")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(Brand.accent)
                 Text("No pending chats")
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(Brand.textMuted)
             }
             .font(.system(.body, design: .monospaced))
         } else {
@@ -203,7 +201,7 @@ struct SummaryView: View {
 
             HStack(spacing: 6) {
                 Image(systemName: "bubble.left.and.bubble.right")
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(Brand.accent)
                 Text("pending chats (\(chats.count)):")
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
@@ -228,13 +226,13 @@ struct SummaryView: View {
     private func itemRow(number: Int, from: String, detail: String, time: String) -> some View {
         HStack(alignment: .top, spacing: 0) {
             Text("\(number). ")
-                .foregroundStyle(.cyan)
+                .foregroundStyle(Brand.accent)
                 .frame(width: 30, alignment: .trailing)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(from) — \"\(detail)\"")
                     .foregroundStyle(.white)
                 Text(time)
-                    .foregroundStyle(.gray)
+                    .foregroundStyle(Brand.textMuted)
             }
             Spacer()
         }
@@ -244,7 +242,7 @@ struct SummaryView: View {
     private func errorRow(icon: String, text: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
-                .foregroundStyle(.cyan)
+                .foregroundStyle(Brand.accent)
             Text(text)
                 .foregroundStyle(.red)
         }
@@ -253,9 +251,6 @@ struct SummaryView: View {
 }
 
 // MARK: - Navigation Destinations
-
-// SwiftUI's NavigationStack needs Hashable values for type-safe navigation.
-// We wrap Email and ChatMessage since they aren't Hashable themselves.
 
 struct EmailDestination: Hashable {
     let email: Email

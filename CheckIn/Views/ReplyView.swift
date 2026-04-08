@@ -16,24 +16,22 @@ struct ReplyView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.black.ignoresSafeArea()
+                Brand.bg.ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: 16) {
-                    // Who you're replying to
                     Text("Replying to \(item.fromName)")
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(Brand.accent)
 
-                    // Text input
                     TextEditor(text: $draft)
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.white)
                         .scrollContentBackground(.hidden)
-                        .background(Color.white.opacity(0.05))
+                        .background(Brand.bgDarker)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.gray.opacity(0.3))
+                                .stroke(Brand.accentDim.opacity(0.3))
                         )
                         .frame(minHeight: 120)
                         .focused($isFocused)
@@ -44,7 +42,7 @@ struct ReplyView: View {
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.black, for: .navigationBar)
+            .toolbarBackground(Brand.bgDarker, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -56,11 +54,11 @@ struct ReplyView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     if viewModel.isSending {
                         ProgressView()
-                            .tint(.green)
+                            .tint(Brand.accent)
                     } else {
                         Button { send() } label: {
                             Image(systemName: "paperplane.fill")
-                                .foregroundStyle(draft.trimmingCharacters(in: .whitespaces).isEmpty ? .gray : .green)
+                                .foregroundStyle(draft.trimmingCharacters(in: .whitespaces).isEmpty ? Brand.textMuted : Brand.accent)
                         }
                         .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
                     }

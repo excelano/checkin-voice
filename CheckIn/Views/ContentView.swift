@@ -48,11 +48,11 @@ struct ContentView: View {
     private func micButton(vm: CheckInViewModel) -> some View {
         ZStack {
             Circle()
-                .fill(vm.dictationService.isListening ? Color.red : Color.green)
+                .fill(vm.dictationService.isListening ? Color.red : Brand.accent)
                 .frame(width: 64, height: 64)
                 .shadow(color: vm.dictationService.isListening
                         ? Color.red.opacity(0.5)
-                        : Color.green.opacity(0.3),
+                        : Brand.accent.opacity(0.3),
                         radius: vm.dictationService.isListening ? 12 : 6)
 
             Image(systemName: vm.dictationService.isListening ? "mic.fill" : "mic")
