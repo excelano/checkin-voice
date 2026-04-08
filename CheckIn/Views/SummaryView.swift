@@ -52,12 +52,6 @@ struct SummaryView: View {
             }
             .navigationTitle("")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text("checkin")
-                        .font(.system(.headline, design: .monospaced))
-                        .foregroundStyle(.green)
-                        .fixedSize()
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         SettingsView(viewModel: viewModel)
