@@ -8,7 +8,6 @@ import SwiftUI
 
 struct SummaryView: View {
     var viewModel: CheckInViewModel
-    @State private var permissionChecked = false
 
     var body: some View {
         NavigationStack {
@@ -48,17 +47,8 @@ struct SummaryView: View {
             }
             .navigationTitle("")
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 16) {
-                        // Mic button
-                        Button {
-                            toggleListening()
-                        } label: {
-                            Image(systemName: viewModel.dictationService.isListening ? "mic.fill" : "mic")
-                                .foregroundStyle(viewModel.dictationService.isListening ? .red : .green)
-                        }
-                        .disabled(!viewModel.dictationService.permissionGranted)
-
                         // Stop TTS
                         if viewModel.speechService.isSpeaking {
                             Button {
@@ -68,14 +58,14 @@ struct SummaryView: View {
                                     .foregroundStyle(.yellow)
                             }
                         }
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        SettingsView(viewModel: viewModel)
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundStyle(.gray)
+
+                        // Settings
+                        NavigationLink {
+                            SettingsView(viewModel: viewModel)
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(.gray)
+                        }
                     }
                 }
             }
@@ -91,27 +81,9 @@ struct SummaryView: View {
                 if viewModel.summary == nil {
                     await viewModel.fetchSummary()
                 }
-                if !permissionChecked {
-                    permissionChecked = true
-                    await viewModel.dictationService.requestPermission()
-                }
             }
         }
         .preferredColorScheme(.dark)
-    }
-
-    private func toggleListening() {
-        if viewModel.dictationService.isListening {
-            let transcript = viewModel.dictationService.stopListening()
-            if !transcript.isEmpty {
-                Task {
-                    await viewModel.handleVoiceCommand(transcript)
-                }
-            }
-        } else {
-            viewModel.speechService.stop()
-            viewModel.dictationService.startListening()
-        }
     }
 
     // MARK: - Meeting

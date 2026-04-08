@@ -8,12 +8,75 @@ struct ContentView: View {
     var authService: AuthService
     @State private var isSigningIn = false
     @State private var errorMessage: String?
+    @State private var viewModel: CheckInViewModel?
+    @State private var permissionChecked = false
 
     var body: some View {
         if authService.isAuthenticated {
-            SummaryView(viewModel: CheckInViewModel(authService: authService))
+            let vm = viewModel ?? createViewModel()
+            ZStack {
+                SummaryView(viewModel: vm)
+
+                // Floating mic button
+                VStack {
+                    Spacer()
+                    micButton(vm: vm)
+                        .padding(.bottom, 30)
+                }
+                .task {
+                    if !permissionChecked {
+                        permissionChecked = true
+                        await vm.dictationService.requestPermission()
+                    }
+                }
+            }
         } else {
             signInView
+        }
+    }
+
+    private func createViewModel() -> CheckInViewModel {
+        let vm = CheckInViewModel(authService: authService)
+        Task { @MainActor in
+            viewModel = vm
+        }
+        return vm
+    }
+
+    // MARK: - Floating Mic Button
+
+    private func micButton(vm: CheckInViewModel) -> some View {
+        Button {
+            toggleListening(vm: vm)
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(vm.dictationService.isListening ? Color.red : Color.green)
+                    .frame(width: 64, height: 64)
+                    .shadow(color: vm.dictationService.isListening
+                            ? Color.red.opacity(0.5)
+                            : Color.green.opacity(0.3),
+                            radius: vm.dictationService.isListening ? 12 : 6)
+
+                Image(systemName: vm.dictationService.isListening ? "mic.fill" : "mic")
+                    .font(.title2)
+                    .foregroundStyle(.white)
+            }
+        }
+        .disabled(!vm.dictationService.permissionGranted)
+    }
+
+    private func toggleListening(vm: CheckInViewModel) {
+        if vm.dictationService.isListening {
+            let transcript = vm.dictationService.stopListening()
+            if !transcript.isEmpty {
+                Task {
+                    await vm.handleVoiceCommand(transcript)
+                }
+            }
+        } else {
+            vm.speechService.stop()
+            vm.dictationService.startListening()
         }
     }
 
@@ -76,7 +139,6 @@ struct ContentView: View {
 
         Task {
             do {
-                // Teams disabled for now — Settings toggle will control this later
                 _ = try await authService.signIn(enableTeams: false)
             } catch {
                 print("Sign-in error: \(error)")
