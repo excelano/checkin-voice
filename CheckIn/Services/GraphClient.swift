@@ -115,38 +115,23 @@ final class GraphClient {
         let cutoff = Date().addingTimeInterval(-24 * 3600)
         var messages: [ChatMessage] = []
 
-        print("DEBUG: pendingChats - total chats returned: \(data.value.count), userID: \(userID)")
-
         for chat in data.value {
-            guard let preview = chat.lastMessagePreview else {
-                print("DEBUG: chat \(chat.id.prefix(8))... skipped: no lastMessagePreview")
-                continue
-            }
+            guard let preview = chat.lastMessagePreview else { continue }
 
             // Skip system messages (meeting recordings, etc.)
             if !preview.messageType.isEmpty && preview.messageType != "message" {
-                print("DEBUG: chat \(chat.id.prefix(8))... skipped: system message type '\(preview.messageType)'")
                 continue
             }
 
             // Skip if sender is unknown
-            guard let from = preview.from?.user else {
-                print("DEBUG: chat \(chat.id.prefix(8))... skipped: no sender info")
-                continue
-            }
+            guard let from = preview.from?.user else { continue }
 
             // Skip if you sent the last message (not pending)
-            if from.id == userID {
-                print("DEBUG: chat \(chat.id.prefix(8))... skipped: sent by self (\(from.displayName))")
-                continue
-            }
+            if from.id == userID { continue }
 
             // Parse sent time, skip if older than 24 hours
             guard let sent = parseISO8601(preview.createdDateTime),
-                  sent > cutoff else {
-                print("DEBUG: chat \(chat.id.prefix(8))... skipped: too old (\(preview.createdDateTime))")
-                continue
-            }
+                  sent > cutoff else { continue }
 
             // Determine topic
             var topic = chat.topic ?? ""
@@ -207,14 +192,7 @@ final class GraphClient {
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response, data: data, method: "GET", path: path)
-        do {
-            return try JSONDecoder().decode(T.self, from: data)
-        } catch {
-            let raw = String(data: data.prefix(500), encoding: .utf8) ?? "non-utf8"
-            print("DEBUG: JSON decode failed for \(path): \(error)")
-            print("DEBUG: Raw response (first 500 chars): \(raw)")
-            throw error
-        }
+        return try JSONDecoder().decode(T.self, from: data)
     }
 
     private func patch(_ path: String, body: some Encodable) async throws {

@@ -28,18 +28,9 @@ final class AuthService {
                 redirectUri: Constants.redirectURI,
                 authority: authority
             )
-            // Enable MSAL logging for debugging
-            MSALGlobalConfig.loggerConfig.logLevel = .verbose
-            MSALGlobalConfig.loggerConfig.logMaskingLevel = .settingsMaskAllPII
-            MSALGlobalConfig.loggerConfig.setLogCallback { level, message, containsPII in
-                if let message { print("MSAL [\(level.rawValue)]: \(message)") }
-            }
-
             msalApp = try MSALPublicClientApplication(configuration: config)
-            print("MSAL configured successfully. Client ID: \(Constants.clientID)")
-            print("MSAL redirect URI: \(Constants.redirectURI)")
         } catch {
-            print("Failed to configure MSAL: \(error)")
+            print("Failed to configure MSAL: \(error.localizedDescription)")
         }
     }
 

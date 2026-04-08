@@ -88,10 +88,11 @@ struct ContentView: View {
             Text("CheckIn")
                 .font(.system(.largeTitle, design: .monospaced))
                 .fontWeight(.bold)
+                .foregroundStyle(.white)
 
             Text("Sign in with your Microsoft 365 account to get started.")
                 .font(.system(.body, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Brand.textMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
 
@@ -110,7 +111,7 @@ struct ContentView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: 280)
                 .padding(.vertical, 14)
-                .background(Color.blue)
+                .background(Brand.accent)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .disabled(isSigningIn)
@@ -127,7 +128,7 @@ struct ContentView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(Brand.bg)
     }
 
     // MARK: - Actions
@@ -140,8 +141,7 @@ struct ContentView: View {
             do {
                 _ = try await authService.signIn(enableTeams: false)
             } catch {
-                print("Sign-in error: \(error)")
-                errorMessage = "\(error)"
+                errorMessage = error.localizedDescription
             }
             isSigningIn = false
         }

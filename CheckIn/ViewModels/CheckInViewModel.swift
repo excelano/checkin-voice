@@ -92,26 +92,21 @@ final class CheckInViewModel {
 
         do {
             meeting = try await graphClient.nextMeeting()
-            print("DEBUG: Calendar fetch succeeded")
         } catch {
-            print("DEBUG: Calendar fetch failed: \(error)")
+            // Calendar errors are non-fatal
         }
 
         do {
             emails = try await graphClient.unreadEmails()
-            print("DEBUG: Email fetch succeeded, count: \(emails.count)")
         } catch {
             emailError = error.localizedDescription
-            print("DEBUG: Email fetch failed: \(error)")
         }
 
         if enableTeams {
             do {
                 chats = try await graphClient.pendingChats()
-                print("DEBUG: Teams fetch succeeded, count: \(chats.count)")
             } catch {
                 chatError = error.localizedDescription
-                print("DEBUG: Teams fetch failed: \(error)")
             }
         }
 
