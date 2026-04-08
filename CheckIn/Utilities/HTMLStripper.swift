@@ -9,6 +9,19 @@ import Foundation
 func stripHTML(_ html: String) -> String {
     var s = html
 
+    // Remove style and script blocks entirely (content and tags)
+    if let styleRegex = try? NSRegularExpression(pattern: "<style[^>]*>.*?</style>", options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+        s = styleRegex.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
+    }
+    if let scriptRegex = try? NSRegularExpression(pattern: "<script[^>]*>.*?</script>", options: [.caseInsensitive, .dotMatchesLineSeparators]) {
+        s = scriptRegex.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
+    }
+
+    // Remove HTML comments
+    if let commentRegex = try? NSRegularExpression(pattern: "<!--.*?-->", options: .dotMatchesLineSeparators) {
+        s = commentRegex.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
+    }
+
     // Replace block elements with newlines
     let blockTags = ["</p>", "</div>", "</tr>", "<br>", "<br/>", "<br />"]
     for tag in blockTags {
