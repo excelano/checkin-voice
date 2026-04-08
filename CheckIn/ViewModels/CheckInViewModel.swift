@@ -52,10 +52,20 @@ final class CheckInViewModel {
     @ObservationIgnored var enableTeams: Bool {
         didSet { UserDefaults.standard.set(enableTeams, forKey: "enableTeams") }
     }
+    @ObservationIgnored var voiceOnStart: Bool {
+        didSet { UserDefaults.standard.set(voiceOnStart, forKey: "voiceOnStart") }
+    }
 
     init(authService: AuthService) {
         self.authService = authService
         self.enableTeams = UserDefaults.standard.bool(forKey: "enableTeams")
+        // Voice on Start defaults to true if never set
+        if UserDefaults.standard.object(forKey: "voiceOnStart") == nil {
+            self.voiceOnStart = true
+            UserDefaults.standard.set(true, forKey: "voiceOnStart")
+        } else {
+            self.voiceOnStart = UserDefaults.standard.bool(forKey: "voiceOnStart")
+        }
         self.graphClient = GraphClient(authService: authService, enableTeams: enableTeams)
     }
 
@@ -119,10 +129,9 @@ final class CheckInViewModel {
 
         isLoading = false
 
-        // TTS disabled temporarily — re-enable once dashboard is working
-        // if let summary {
-        //     speechService.speakSummary(summary)
-        // }
+        if voiceOnStart, let summary {
+            speechService.speakSummary(summary)
+        }
     }
 
     // MARK: - View Detail

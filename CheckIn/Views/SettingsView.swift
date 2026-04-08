@@ -1,5 +1,5 @@
 // SettingsView.swift — CheckIn Voice
-// Teams toggle and sign out
+// Teams toggle, voice settings, and sign out
 //
 // Author: David M. Anderson
 // Built with AI assistance (Claude, Anthropic)
@@ -16,6 +16,25 @@ struct SettingsView: View {
             Color.black.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 24) {
+                // Voice on Start toggle
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(isOn: Binding(
+                        get: { viewModel.voiceOnStart },
+                        set: { viewModel.voiceOnStart = $0 }
+                    )) {
+                        Text("Voice on Start")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.white)
+                    }
+                    .tint(.green)
+
+                    Text("Read your summary aloud when the app starts.")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.gray)
+                }
+
+                Divider().overlay(Color.gray.opacity(0.3))
+
                 // Teams toggle
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle(isOn: Binding(

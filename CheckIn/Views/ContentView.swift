@@ -43,41 +43,40 @@ struct ContentView: View {
         return vm
     }
 
-    // MARK: - Floating Mic Button
+    // MARK: - Floating Mic Button (Push-to-Talk)
 
     private func micButton(vm: CheckInViewModel) -> some View {
-        Button {
-            toggleListening(vm: vm)
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(vm.dictationService.isListening ? Color.red : Color.green)
-                    .frame(width: 64, height: 64)
-                    .shadow(color: vm.dictationService.isListening
-                            ? Color.red.opacity(0.5)
-                            : Color.green.opacity(0.3),
-                            radius: vm.dictationService.isListening ? 12 : 6)
+        ZStack {
+            Circle()
+                .fill(vm.dictationService.isListening ? Color.red : Color.green)
+                .frame(width: 64, height: 64)
+                .shadow(color: vm.dictationService.isListening
+                        ? Color.red.opacity(0.5)
+                        : Color.green.opacity(0.3),
+                        radius: vm.dictationService.isListening ? 12 : 6)
 
-                Image(systemName: vm.dictationService.isListening ? "mic.fill" : "mic")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-            }
+            Image(systemName: vm.dictationService.isListening ? "mic.fill" : "mic")
+                .font(.title2)
+                .foregroundStyle(.white)
         }
-        .disabled(!vm.dictationService.permissionGranted)
-    }
-
-    private func toggleListening(vm: CheckInViewModel) {
-        if vm.dictationService.isListening {
-            let transcript = vm.dictationService.stopListening()
-            if !transcript.isEmpty {
-                Task {
-                    await vm.handleVoiceCommand(transcript)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !vm.dictationService.isListening {
+                        vm.speechService.stop()
+                        vm.dictationService.startListening()
+                    }
                 }
-            }
-        } else {
-            vm.speechService.stop()
-            vm.dictationService.startListening()
-        }
+                .onEnded { _ in
+                    let transcript = vm.dictationService.stopListening()
+                    if !transcript.isEmpty {
+                        Task {
+                            await vm.handleVoiceCommand(transcript)
+                        }
+                    }
+                }
+        )
+        .disabled(!vm.dictationService.permissionGranted)
     }
 
     // MARK: - Sign In
