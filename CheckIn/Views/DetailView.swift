@@ -10,6 +10,7 @@ struct DetailView: View {
     var viewModel: CheckInViewModel
     let item: Item
     @State private var showReply = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
@@ -32,11 +33,25 @@ struct DetailView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showReply = true
-                } label: {
-                    Image(systemName: "arrowshape.turn.up.left")
-                        .foregroundStyle(.green)
+                HStack(spacing: 16) {
+                    if case .email(let email) = item {
+                        Button {
+                            Task {
+                                await viewModel.markRead(email)
+                                await viewModel.fetchSummary()
+                                dismiss()
+                            }
+                        } label: {
+                            Image(systemName: "envelope.open")
+                                .foregroundStyle(.green)
+                        }
+                    }
+                    Button {
+                        showReply = true
+                    } label: {
+                        Image(systemName: "arrowshape.turn.up.left")
+                            .foregroundStyle(.green)
+                    }
                 }
             }
         }
@@ -81,22 +96,6 @@ struct DetailView: View {
                 .font(.system(.body, design: .monospaced))
                 .foregroundStyle(.white)
         }
-
-        // Mark as read button
-        Button {
-            Task {
-                await viewModel.markRead(email)
-            }
-        } label: {
-            Text("Mark as Read")
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.black)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.green)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .padding(.top, 8)
     }
 
     // MARK: - Chat Detail

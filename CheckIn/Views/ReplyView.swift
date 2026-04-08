@@ -90,6 +90,7 @@ struct ReplyView: View {
             case .chat(let chat):
                 await viewModel.replyToChat(chat, text: text)
             }
+            await viewModel.fetchSummary()
             dismiss()
         }
     }
