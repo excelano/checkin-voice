@@ -21,20 +21,16 @@ struct SummaryView: View {
                         .foregroundStyle(.green)
                         .tint(.green)
                 } else if let summary = viewModel.summary {
-                    VStack(spacing: 0) {
-                        ScrollView {
-                            VStack(alignment: .leading, spacing: 16) {
-                                meetingSection(summary.meeting)
-                                emailSection(summary.emails, error: summary.emailError)
-                                teamsSection(summary.chats, error: summary.chatError, enabled: summary.teamsEnabled)
-                            }
-                            .padding()
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            meetingSection(summary.meeting)
+                            emailSection(summary.emails, error: summary.emailError)
+                            teamsSection(summary.chats, error: summary.chatError, enabled: summary.teamsEnabled)
                         }
-                        .refreshable {
-                            await viewModel.fetchSummary()
-                        }
-
-                        voiceBar
+                        .padding()
+                    }
+                    .refreshable {
+                        await viewModel.fetchSummary()
                     }
                 } else if let error = viewModel.error {
                     VStack(spacing: 12) {
@@ -53,11 +49,33 @@ struct SummaryView: View {
             .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        SettingsView(viewModel: viewModel)
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .foregroundStyle(.gray)
+                    HStack(spacing: 16) {
+                        // Mic button
+                        Button {
+                            toggleListening()
+                        } label: {
+                            Image(systemName: viewModel.dictationService.isListening ? "mic.fill" : "mic")
+                                .foregroundStyle(viewModel.dictationService.isListening ? .red : .green)
+                        }
+                        .disabled(!viewModel.dictationService.permissionGranted)
+
+                        // Stop TTS
+                        if viewModel.speechService.isSpeaking {
+                            Button {
+                                viewModel.speechService.stop()
+                            } label: {
+                                Image(systemName: "speaker.slash")
+                                    .foregroundStyle(.yellow)
+                            }
+                        }
+
+                        // Settings
+                        NavigationLink {
+                            SettingsView(viewModel: viewModel)
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(.gray)
+                        }
                     }
                 }
             }
@@ -80,52 +98,6 @@ struct SummaryView: View {
             }
         }
         .preferredColorScheme(.dark)
-    }
-
-    // MARK: - Voice Bar
-
-    private var voiceBar: some View {
-        HStack(spacing: 16) {
-            // Mic button
-            Button {
-                toggleListening()
-            } label: {
-                Image(systemName: viewModel.dictationService.isListening ? "mic.fill" : "mic")
-                    .font(.title2)
-                    .foregroundStyle(viewModel.dictationService.isListening ? .red : .green)
-            }
-            .disabled(!viewModel.dictationService.permissionGranted)
-
-            // Transcript or hint
-            if viewModel.dictationService.isListening {
-                Text(viewModel.dictationService.transcript.isEmpty
-                     ? "Listening..."
-                     : viewModel.dictationService.transcript)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-            } else {
-                Text("Tap mic or pull to refresh")
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.gray)
-            }
-
-            Spacer()
-
-            // Stop TTS button (only visible when speaking)
-            if viewModel.speechService.isSpeaking {
-                Button {
-                    viewModel.speechService.stop()
-                } label: {
-                    Image(systemName: "speaker.slash")
-                        .font(.title3)
-                        .foregroundStyle(.yellow)
-                }
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(Color.white.opacity(0.05))
     }
 
     private func toggleListening() {
