@@ -69,9 +69,10 @@ struct ReplyView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.red)
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .foregroundStyle(.red)
+                    }
                 }
             }
             .onAppear { isFocused = true }
