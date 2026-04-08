@@ -66,6 +66,15 @@ struct DetailView: View {
                 await viewModel.viewChat(chat)
             }
         }
+        .onChange(of: viewModel.replySent) {
+            if viewModel.replySent {
+                viewModel.replySent = false
+                Task {
+                    await viewModel.fetchSummary()
+                }
+                dismiss()
+            }
+        }
     }
 
     // MARK: - Email Detail

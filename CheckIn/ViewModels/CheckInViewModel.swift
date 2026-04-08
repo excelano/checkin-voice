@@ -42,6 +42,7 @@ final class CheckInViewModel {
     var isReplying = false
     var replyDraft = ""
     private(set) var isSending = false
+    var replySent = false
 
     // Services
     let authService: AuthService
@@ -198,6 +199,7 @@ final class CheckInViewModel {
             try await graphClient.replyToEmail(id: email.id, comment: comment)
             replyDraft = ""
             isReplying = false
+            replySent = true
         } catch {
             self.error = "Failed to send reply: \(error.localizedDescription)"
         }
@@ -210,6 +212,7 @@ final class CheckInViewModel {
             try await graphClient.sendChatMessage(chatID: chat.chatID, text: text)
             replyDraft = ""
             isReplying = false
+            replySent = true
         } catch {
             self.error = "Failed to send message: \(error.localizedDescription)"
         }
