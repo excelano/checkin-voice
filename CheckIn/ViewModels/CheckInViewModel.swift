@@ -72,38 +72,35 @@ final class CheckInViewModel {
             return
         }
 
-        // Concurrent fetch, mirroring Go CLI's WaitGroup pattern
+        // Sequential fetch (avoids concurrency issues with TaskGroup)
         var meeting: Meeting?
         var emails: [Email] = []
         var chats: [ChatMessage] = []
         var emailError: String?
         var chatError: String?
 
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                do {
-                    meeting = try await self.graphClient.nextMeeting()
-                } catch {
-                    // Calendar errors are non-fatal, just skip
-                }
-            }
+        do {
+            meeting = try await graphClient.nextMeeting()
+            print("DEBUG: Calendar fetch succeeded")
+        } catch {
+            print("DEBUG: Calendar fetch failed: \(error)")
+        }
 
-            group.addTask {
-                do {
-                    emails = try await self.graphClient.unreadEmails()
-                } catch {
-                    emailError = error.localizedDescription
-                }
-            }
+        do {
+            emails = try await graphClient.unreadEmails()
+            print("DEBUG: Email fetch succeeded, count: \(emails.count)")
+        } catch {
+            emailError = error.localizedDescription
+            print("DEBUG: Email fetch failed: \(error)")
+        }
 
-            if enableTeams {
-                group.addTask {
-                    do {
-                        chats = try await self.graphClient.pendingChats()
-                    } catch {
-                        chatError = error.localizedDescription
-                    }
-                }
+        if enableTeams {
+            do {
+                chats = try await graphClient.pendingChats()
+                print("DEBUG: Teams fetch succeeded, count: \(chats.count)")
+            } catch {
+                chatError = error.localizedDescription
+                print("DEBUG: Teams fetch failed: \(error)")
             }
         }
 

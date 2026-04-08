@@ -189,7 +189,14 @@ final class GraphClient {
 
         let (data, response) = try await session.data(for: request)
         try checkResponse(response, data: data, method: "GET", path: path)
-        return try JSONDecoder().decode(T.self, from: data)
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            let raw = String(data: data.prefix(500), encoding: .utf8) ?? "non-utf8"
+            print("DEBUG: JSON decode failed for \(path): \(error)")
+            print("DEBUG: Raw response (first 500 chars): \(raw)")
+            throw error
+        }
     }
 
     private func patch(_ path: String, body: some Encodable) async throws {
