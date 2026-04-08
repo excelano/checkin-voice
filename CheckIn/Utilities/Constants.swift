@@ -8,8 +8,7 @@ enum Constants {
     // Replace with your Application (client) ID from Azure Portal
     static let clientID = "ee5d84b1-d8b0-48f9-afcd-23b34e9eba79"
 
-    // Single tenant for testing. Change to /common before App Store release.
-    static let authority = "https://login.microsoftonline.com/571183c9-5f75-495d-b3f8-b98a334341ea"
+    static let authority = "https://login.microsoftonline.com/common"
     static let redirectURI = "msauth.com.excelano.checkin://auth"
     static let graphBaseURL = "https://graph.microsoft.com/v1.0"
 
