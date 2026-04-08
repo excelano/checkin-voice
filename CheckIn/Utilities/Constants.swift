@@ -13,12 +13,13 @@ enum Constants {
     static let redirectURI = "msauth.com.excelano.checkin://auth"
     static let graphBaseURL = "https://graph.microsoft.com/v1.0"
 
+    // Note: MSAL for iOS automatically requests openid, profile, and offline_access.
+    // Do not include them here or MSAL will throw an error.
     static let baseScopes = [
         "User.Read",
         "Mail.ReadWrite",
         "Mail.Send",
-        "Calendars.Read",
-        "offline_access"
+        "Calendars.Read"
     ]
 
     static let teamsScopes = [
