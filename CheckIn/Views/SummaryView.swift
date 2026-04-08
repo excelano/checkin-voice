@@ -48,7 +48,7 @@ struct SummaryView: View {
             }
             .navigationTitle("")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 16) {
                         // Mic button
                         Button {
@@ -68,14 +68,14 @@ struct SummaryView: View {
                                     .foregroundStyle(.yellow)
                             }
                         }
-
-                        // Settings
-                        NavigationLink {
-                            SettingsView(viewModel: viewModel)
-                        } label: {
-                            Image(systemName: "gearshape")
-                                .foregroundStyle(.gray)
-                        }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        SettingsView(viewModel: viewModel)
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .foregroundStyle(.gray)
                     }
                 }
             }
