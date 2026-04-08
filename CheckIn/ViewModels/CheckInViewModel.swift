@@ -118,10 +118,10 @@ final class CheckInViewModel {
 
         isLoading = false
 
-        // Read summary aloud
-        if let summary {
-            speechService.speakSummary(summary)
-        }
+        // TTS disabled temporarily — re-enable once dashboard is working
+        // if let summary {
+        //     speechService.speakSummary(summary)
+        // }
     }
 
     // MARK: - View Detail
