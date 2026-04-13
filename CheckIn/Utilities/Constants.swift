@@ -6,7 +6,7 @@ import Foundation
 
 enum Constants {
     // Replace with your Application (client) ID from Azure Portal
-    static let clientID = "ee5d84b1-d8b0-48f9-afcd-23b34e9eba79"
+    static let clientID = "0ce3820d-db53-4b2e-9621-6c4ccc086d5a"
 
     static let authority = "https://login.microsoftonline.com/common"
     static let redirectURI = "msauth.com.excelano.checkin://auth"
