@@ -44,8 +44,9 @@ const state = {
     replyMode: null,  // null | "dictating" | "confirming"
     isSending: false,
 
-    // Pending command being resolved (the "recursive" command builder)
-    pendingCommand: null,  // { action, itemType, name, qualifier, candidates }
+    // Pending command: managed via Object.defineProperty below so that
+    // every assignment (re)starts an idle timeout. See setter.
+    // Shape: { action, itemType, name, qualifier, candidates, awaitingConfirmation }
 
     // Settings (persisted in localStorage)
     enableTeams: localStorage.getItem("enableTeams") === "true",
@@ -57,6 +58,33 @@ const state = {
     userHasInteracted: false,
     pendingSpeech: null,
 };
+
+// Pending command with idle timeout. Assignments to state.pendingCommand go
+// through this setter, which resets the 20-second timer. If the user never
+// responds, the pending command is cleared and a soft audio cue is given.
+const PENDING_TIMEOUT_MS = 20000;
+let _pendingCommand = null;
+let _pendingTimeoutID = null;
+Object.defineProperty(state, "pendingCommand", {
+    enumerable: true,
+    get() { return _pendingCommand; },
+    set(cmd) {
+        if (_pendingTimeoutID) {
+            clearTimeout(_pendingTimeoutID);
+            _pendingTimeoutID = null;
+        }
+        _pendingCommand = cmd;
+        if (cmd) {
+            _pendingTimeoutID = setTimeout(() => {
+                _pendingTimeoutID = null;
+                if (_pendingCommand) {
+                    _pendingCommand = null;
+                    speechSpeak("Never mind, then.");
+                }
+            }, PENDING_TIMEOUT_MS);
+        }
+    },
+});
 
 // ---------------------------------------------------------------------------
 // MSAL Authentication
@@ -115,6 +143,7 @@ function signOut() {
     speechStop();
     hideReply();
     hideSettings();
+    hideHelp();
     state.pendingCommand = null;
     state.selectedItem = null;
     state.lastViewedItem = null;
@@ -358,7 +387,7 @@ async function fetchSummary() {
 // Speech — Text-to-Speech
 // ---------------------------------------------------------------------------
 
-function speechSpeak(text) {
+function speechSpeak(text, onComplete) {
     if (!state.userHasInteracted) {
         state.pendingSpeech = text;
         return;
@@ -370,8 +399,16 @@ function speechSpeak(text) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.0;
         utterance.onstart = () => { state.isSpeaking = true; updateSpeechButton(); };
-        utterance.onend = () => { state.isSpeaking = false; updateSpeechButton(); };
-        utterance.onerror = () => { state.isSpeaking = false; updateSpeechButton(); };
+        utterance.onend = () => {
+            state.isSpeaking = false;
+            updateSpeechButton();
+            if (onComplete) onComplete();
+        };
+        utterance.onerror = () => {
+            state.isSpeaking = false;
+            updateSpeechButton();
+            if (onComplete) onComplete();
+        };
         speechSynthesis.speak(utterance);
     }
 
@@ -447,10 +484,17 @@ function listNames(names) {
         counts.set(name, (counts.get(name) || 0) + 1);
     }
 
-    // Format: "Tony, Sarah, 3 from Mike, 2 from Lisa"
+    // Format: "Tony, Sarah, Mike three times, Lisa twice"
+    // (Placed after the name so the caller can safely prepend "from".)
     const parts = [];
     for (const [name, count] of counts) {
-        parts.push(count > 1 ? count + " from " + name : name);
+        if (count === 1) {
+            parts.push(name);
+        } else if (count === 2) {
+            parts.push(name + " twice");
+        } else {
+            parts.push(name + " " + count + " times");
+        }
     }
 
     if (parts.length === 1) return parts[0];
@@ -601,6 +645,11 @@ const SIMPLE_COMMANDS = {
     "mark all read":       "markAllRead",
     "mark all as read":    "markAllRead",
     "mark all done":       "markAllRead",
+    "help":                "help",
+    "help me":             "help",
+    "what can i do":       "help",
+    "what can i say":      "help",
+    "commands":            "help",
 };
 
 // Time qualifiers extracted from anywhere in the transcript
@@ -806,7 +855,7 @@ function parseVoiceCommand(transcript) {
 // command as state.pendingCommand for the next voice input to continue.
 // ---------------------------------------------------------------------------
 
-function resolveCommand(cmd) {
+function resolveCommand(cmd, transcript = "") {
     console.log("Resolving command:", JSON.stringify(cmd));
 
     // If target is already set (e.g., from detail page), execute
@@ -822,6 +871,7 @@ function resolveCommand(cmd) {
             cmd.target = state.items[idx];
             executeCommand(cmd);
         } else {
+            logUnrecognized(transcript, JSON.stringify(cmd), "number_out_of_range");
             speechSpeak("There is no item " + cmd.number + ".");
         }
         return;
@@ -857,6 +907,7 @@ function resolveCommand(cmd) {
 
     // No matches
     if (candidates.length === 0) {
+        logUnrecognized(transcript, JSON.stringify(cmd), "no_match");
         speechSpeak("I didn't find a match for that.");
         return;
     }
@@ -896,14 +947,31 @@ function resolveCommand(cmd) {
     // Still ambiguous — ask the user
     cmd.candidates = candidates;
     state.pendingCommand = cmd;
+    speechSpeak(askWhichOne(candidates));
+}
 
-    const names = [...new Set(candidates.map(c => c.data.from))];
-    if (names.length > 1) {
-        speechSpeak("Which one? " + listNames(names) + "?");
-    } else {
-        const descriptions = candidates.map(c => describeCandidate(c));
-        speechSpeak("Which one? " + descriptions.join("? Or ") + "?");
+// Choose a disambiguation prompt based on what distinguishes the candidates.
+// - Multiple senders: list sender names.
+// - Single sender, distinct subjects: list subjects.
+// - Single sender, identical subjects (e.g. duplicate emails): prompt by position.
+function askWhichOne(candidates) {
+    const senders = [...new Set(candidates.map(c => c.data.from))];
+    if (senders.length > 1) {
+        return "Which one? " + listNames(senders) + "?";
     }
+    const labels = candidates.map(c =>
+        c.type === "email" ? cleanSubject(c.data.subject) : c.data.topic
+    );
+    const allSame = new Set(labels).size === 1;
+    if (allSame) {
+        if (candidates.length === 2) {
+            return "There are two of those. Say first or second?";
+        }
+        return "There are " + candidates.length + " of those. Say a number from one to "
+            + candidates.length + "?";
+    }
+    const descriptions = candidates.map(c => describeCandidate(c));
+    return "Which one? " + descriptions.join("? Or ") + "?";
 }
 
 function actionVerb(action) {
@@ -927,7 +995,28 @@ function continuePendingCommand(transcript) {
     const text = normalizeTranscript(transcript);
     const cmd = state.pendingCommand;
 
-    // Cancel
+    // Confirmation dialog for destructive actions (yes / no)
+    if (cmd.awaitingConfirmation) {
+        const CONFIRM = ["yes", "confirm", "send", "send it", "ok", "okay",
+                         "go ahead", "do it", "yep", "yeah"];
+        const DENY = ["cancel", "never mind", "no", "nope", "stop"];
+        if (DENY.includes(text)) {
+            state.pendingCommand = null;
+            speechSpeak("Cancelled.");
+            return;
+        }
+        if (CONFIRM.includes(text)) {
+            state.pendingCommand = null;
+            cmd.confirmed = true;
+            cmd.awaitingConfirmation = false;
+            executeCommand(cmd);
+            return;
+        }
+        speechSpeak("Say yes to confirm, or cancel.");
+        return;
+    }
+
+    // Cancel (disambiguation context)
     if (text === "cancel" || text === "never mind") {
         state.pendingCommand = null;
         return;
@@ -938,7 +1027,7 @@ function continuePendingCommand(transcript) {
     if (qualifier && cmd.candidates && cmd.candidates.length > 1) {
         cmd.qualifier = qualifier;
         state.pendingCommand = null;
-        resolveCommand(cmd);
+        resolveCommand(cmd, transcript);
         return;
     }
 
@@ -981,13 +1070,26 @@ function continuePendingCommand(transcript) {
             return { item, score };
         });
 
-        scored.sort((a, b) => b.score - a.score);
+        const maxScore = Math.max(0, ...scored.map(s => s.score));
+        if (maxScore > 0) {
+            const topMatches = scored
+                .filter(s => s.score === maxScore)
+                .map(s => s.item);
 
-        if (scored[0].score > 0 && (scored.length === 1 || scored[0].score > scored[1].score)) {
-            cmd.target = scored[0].item;
-            state.pendingCommand = null;
-            executeCommand(cmd);
-            return;
+            if (topMatches.length === 1) {
+                cmd.target = topMatches[0];
+                state.pendingCommand = null;
+                executeCommand(cmd);
+                return;
+            }
+
+            // Tied at the top — narrow the candidate list and fall through
+            // to re-prompt. The narrower prompt will use askWhichOne to pick
+            // the right disambiguation strategy (sender / subject / ordinal).
+            if (topMatches.length < cmd.candidates.length) {
+                cmd.candidates = topMatches;
+                state.pendingCommand = cmd;
+            }
         }
     }
 
@@ -998,15 +1100,14 @@ function continuePendingCommand(transcript) {
         if (cleaned) {
             cmd.name = cleaned;
             state.pendingCommand = null;
-            resolveCommand(cmd);
+            resolveCommand(cmd, transcript);
             return;
         }
     }
 
-    // Still can't tell — repeat
+    // Still can't tell — repeat using the shared prompt builder
     if (cmd.candidates && cmd.candidates.length > 1) {
-        const descriptions = cmd.candidates.map(c => describeCandidate(c));
-        speechSpeak("Which one? " + descriptions.join("? Or ") + "?");
+        speechSpeak(askWhichOne(cmd.candidates));
     } else {
         speechSpeak("Who would you like to " + actionVerb(cmd.action) + "?");
     }
@@ -1024,23 +1125,84 @@ async function executeCommand(cmd) {
             await viewDetail(cmd.target, true);
             break;
         case "reply":
-            showReply(cmd.target);
+            showReply(cmd.target, true);
             break;
         case "markRead":
-            if (cmd.target.type === "email") {
-                await markEmailRead(cmd.target.data.id);
-                state.items = state.items.filter(i => i.data.id !== cmd.target.data.id);
-                state.summary.emails = state.summary.emails.filter(e => e.id !== cmd.target.data.id);
-                if (state.lastViewedItem && state.lastViewedItem.data.id === cmd.target.data.id) {
-                    state.lastViewedItem = null;
-                }
-                showSummaryView();
-                renderSummary();
-                speechSpeak("Marked as read.");
-            } else {
+            if (cmd.target.type !== "email") {
                 speechSpeak("Only emails can be marked as read.");
+                return;
             }
+            if (!cmd.confirmed) {
+                cmd.awaitingConfirmation = true;
+                state.pendingCommand = cmd;
+                speechSpeak(
+                    "Mark " + cmd.target.data.from + "'s email as read? " +
+                    "Say yes to confirm, or cancel."
+                );
+                return;
+            }
+            await performMarkRead(cmd.target);
             break;
+        case "markAllRead":
+            await performMarkAllRead();
+            break;
+    }
+}
+
+async function performMarkAllRead() {
+    if (!state.summary) return;
+    for (const email of state.summary.emails) {
+        try { await markEmailRead(email.id); } catch {}
+    }
+    state.lastViewedItem = null;
+    await fetchSummary();
+    speechSpeak("All emails marked as read.");
+}
+
+async function performMarkRead(target) {
+    await markEmailRead(target.data.id);
+    state.items = state.items.filter(i => i.data.id !== target.data.id);
+    state.summary.emails = state.summary.emails.filter(e => e.id !== target.data.id);
+    if (state.lastViewedItem && state.lastViewedItem.data.id === target.data.id) {
+        state.lastViewedItem = null;
+    }
+    showSummaryView();
+    renderSummary();
+    speechSpeak("Marked as read.");
+}
+
+function speakHelp() {
+    const lines = [
+        "You can say: read email from a name, or reply to chat from a name.",
+        "To pick one when there are several, say latest or oldest, or give a number.",
+        "Other commands: mark as read, reply, send, cancel, refresh, go back, and stop.",
+    ];
+    speechSpeak(lines.join(" "));
+    showHelp();
+}
+
+function showHelp() {
+    document.getElementById("help-panel").classList.remove("hidden");
+}
+
+function hideHelp() {
+    document.getElementById("help-panel").classList.add("hidden");
+}
+
+function logUnrecognized(original, normalized, reason = "no_pattern_match") {
+    console.warn("Unrecognized command:", { original, normalized, reason });
+    try {
+        const key = "unrecognizedUtterances";
+        const existing = JSON.parse(localStorage.getItem(key) || "[]");
+        existing.push({
+            timestamp: new Date().toISOString(),
+            original: original,
+            normalized: normalized,
+            reason: reason,
+        });
+        localStorage.setItem(key, JSON.stringify(existing.slice(-200)));
+    } catch (err) {
+        console.warn("Failed to log unrecognized utterance:", err);
     }
 }
 
@@ -1072,25 +1234,38 @@ async function handleVoiceCommand(transcript) {
             await fetchSummary();
             return;
         case "markAllRead":
-            if (state.summary) {
-                for (const email of state.summary.emails) {
-                    try { await markEmailRead(email.id); } catch {}
-                }
-                state.lastViewedItem = null;
-                await fetchSummary();
-                speechSpeak("All emails marked as read.");
+            if (!state.summary || state.summary.emails.length === 0) {
+                speechSpeak("No unread emails to mark.");
+                return;
             }
+            state.pendingCommand = {
+                action: "markAllRead",
+                awaitingConfirmation: true,
+            };
+            speechSpeak(
+                "Mark all " + state.summary.emails.length + " unread emails as read? " +
+                "Say yes to confirm, or cancel."
+            );
             return;
         case "stop":
             speechStop();
             state.pendingCommand = null;
             return;
+        case "help":
+            speakHelp();
+            return;
         case "unknown":
+            logUnrecognized(transcript, command.text || "");
+            speechSpeak(
+                "I heard: " + transcript + ". " +
+                "I'm not sure what to do with that. " +
+                "Say help to hear what you can say."
+            );
             return;
     }
 
     // Target-based commands — resolve through the recursive resolver
-    resolveCommand(command);
+    resolveCommand(command, transcript);
 }
 
 // ---------------------------------------------------------------------------
@@ -1139,7 +1314,7 @@ async function viewDetail(item, speak = false) {
 // Reply
 // ---------------------------------------------------------------------------
 
-function showReply(item) {
+function showReply(item, autoStartMic = false) {
     state.replyItem = item;
     state.replyMode = "dictating";
     const label = document.getElementById("reply-to-label");
@@ -1148,7 +1323,19 @@ function showReply(item) {
     document.getElementById("reply-send-btn").disabled = true;
     document.getElementById("reply-modal").classList.remove("hidden");
     document.getElementById("reply-draft").focus();
-    speechSpeak("Dictate your reply. Press the microphone when you are done.");
+
+    if (autoStartMic) {
+        speechSpeak(
+            "Dictate your reply. Press the microphone when you are done.",
+            () => {
+                if (state.replyMode === "dictating" && !state.isListening) {
+                    startListening();
+                }
+            }
+        );
+    } else {
+        speechSpeak("Press the microphone to dictate, or type your reply.");
+    }
 }
 
 function hideReply() {
@@ -1165,16 +1352,24 @@ function confirmReply() {
         return;
     }
     state.replyMode = "confirming";
-    speechSpeak("Your message says: " + draft + ". Ready to send it? Or cancel?");
+    speechSpeak(
+        "Your message says: " + draft + ". Ready to send it? Or cancel?",
+        () => {
+            if (state.replyMode === "confirming" && !state.isListening) {
+                startListening();
+            }
+        }
+    );
 }
 
 function handleReplyVoiceInput(transcript) {
     if (state.replyMode === "dictating") {
-        // Append dictated text to the draft
+        // Append dictated text to the draft, then auto-advance to confirmation
         const textarea = document.getElementById("reply-draft");
         const current = textarea.value;
         textarea.value = current ? current + " " + transcript : transcript;
         document.getElementById("reply-send-btn").disabled = false;
+        confirmReply();
         return;
     }
 
@@ -1623,12 +1818,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     document.getElementById("stop-speech-btn").addEventListener("click", speechStop);
     document.getElementById("settings-btn").addEventListener("click", showSettings);
+    document.getElementById("help-btn").addEventListener("click", showHelp);
 
     // Retry
     document.getElementById("retry-btn").addEventListener("click", fetchSummary);
 
     // Mic button — click to toggle
     document.getElementById("mic-btn").addEventListener("click", () => {
+        // Interrupt rule: pressing the mic while TTS is speaking always
+        // silences it and begins listening, regardless of prior state.
+        if (state.isSpeaking) {
+            startListening();
+            return;
+        }
         if (state.isListening) {
             stopListening();
         } else {
@@ -1646,5 +1848,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Settings
     document.getElementById("settings-close-btn").addEventListener("click", saveSettings);
+    document.getElementById("help-close-btn").addEventListener("click", hideHelp);
     document.getElementById("sign-out-btn").addEventListener("click", signOut);
 });

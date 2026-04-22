@@ -31,6 +31,7 @@
         </div>
         <div class="toolbar-right">
             <button id="stop-speech-btn" class="toolbar-btn hidden" title="Stop speaking">&#128263;</button>
+            <button id="help-btn" class="toolbar-btn" title="Help">?</button>
             <button id="settings-btn" class="toolbar-btn" title="Settings">&#9881;</button>
         </div>
     </header>
@@ -82,6 +83,45 @@
             <button id="sign-out-btn" class="btn-link error-text">Sign Out</button>
             <hr class="divider">
             <button id="settings-close-btn" class="btn-link">Close</button>
+        </div>
+    </div>
+
+    <!-- Help panel -->
+    <div id="help-panel" class="hidden">
+        <div class="help-container">
+            <h2>Voice Commands</h2>
+
+            <h3>Reading</h3>
+            <dl class="help-list">
+                <dt>"read email from [name]"</dt><dd>open an email</dd>
+                <dt>"read chat from [name]"</dt><dd>open a chat message</dd>
+                <dt>"read latest from [name]"</dt><dd>pick the newest when multiple match</dd>
+                <dt>"read number 3" or "read 3"</dt><dd>pick by position in the list</dd>
+            </dl>
+
+            <h3>Replying</h3>
+            <dl class="help-list">
+                <dt>"reply" or "reply to [name]"</dt><dd>start a reply</dd>
+                <dt>"send" or "send it"</dt><dd>send the dictated reply</dd>
+                <dt>"cancel" or "never mind"</dt><dd>discard the reply</dd>
+            </dl>
+
+            <h3>Managing</h3>
+            <dl class="help-list">
+                <dt>"mark as read from [name]"</dt><dd>mark one email read (with confirmation)</dd>
+                <dt>"mark all read"</dt><dd>clear all unread emails (with confirmation)</dd>
+            </dl>
+
+            <h3>Navigation</h3>
+            <dl class="help-list">
+                <dt>"refresh" or "check again"</dt><dd>reload the summary</dd>
+                <dt>"go back"</dt><dd>return to the summary</dd>
+                <dt>"stop"</dt><dd>silence playback</dd>
+                <dt>"help" or "what can I do"</dt><dd>show this panel</dd>
+            </dl>
+
+            <hr class="divider">
+            <button id="help-close-btn" class="btn-link">Close</button>
         </div>
     </div>
 
