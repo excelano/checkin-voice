@@ -119,5 +119,6 @@ Several phases from the original plan are no longer needed:
 - `PERSONA.md` — the working voice persona reference.
 - `STATES.md` — the application state diagram and transitions.
 - `CAPABILITIES.md` — Apple voice/audio API and Natural Language framework capability scan.
+- `PHASE3-NOTES.md` — patterns extracted from the archived web prototype, queued for Phase 3.
 - `PRIVACY.md` — privacy posture statement (forthcoming).
 - `SELF-HOSTING.md` — full self-hosting walkthrough (forthcoming).
