@@ -6,7 +6,7 @@ Updated 2026-05-07.
 
 **iOS app** (`CheckIn/`): Foundation in place. MSAL auth, Graph API client, basic SwiftUI UI shell, TTS, AppIntents-based Siri shortcut scaffolding. Voice layer is the early intuition-driven version that predates the design audit; the full state machine, dialog context, persona, and the rest of the structures decided in `DESIGN.md` have not yet been implemented. About 2,200 lines of Swift, partly retained, partly rewritten.
 
-**Web app** (`web/`): Frozen. Functioned as a voice prototype while iOS was blocked. Will be reduced to text/click/type once the iOS Day 1 voice layer ships. No further voice work.
+**Web prototype:** Out of scope. Moved to its own archived repo at `excelano/checkin-web-prototype`.
 
 **Apple Developer enrollment:** Submitted 2026-05-06 with corrected D&B profile. Awaiting Apple verification email (1-5 business days). Once approved, TestFlight distribution becomes available.
 
@@ -109,7 +109,6 @@ Several phases from the original plan are no longer needed:
 
 ## Decisions to preserve from the prior plan
 
-- Web app voice layer frozen. Reduce to text/click/type once iOS Day 1 ships.
 - Client ID in `Constants.swift` reflects `excelano.onmicrosoft.com` tenant (publisher-verified). Now backed by `@AppStorage` per D25 to allow user override.
 - Bundle ID: `com.excelano.checkin`.
 - Brand colors: dark navy `#0f2233`, teal `#2ab8d0`, muted `#6a8899`.
